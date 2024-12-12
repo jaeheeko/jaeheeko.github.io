@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube Player Tracker</title>
+</head>
+<body>
+  <div>
+    <label for="video-url">YouTube Video URL:</label>
+    <input type="text" id="video-url" placeholder="Enter Video URL">
+
+    <label for="target-time">Target Time (seconds):</label>
+    <input type="number" id="target-time" placeholder="Enter Target Time">
+
+    <button onclick="loadVideo()">Load Video</button>
+  </div>
+
+  <div id="player"></div>
+
+  <div id="complete-btn" style="background-color: gray; width: 200px; height: 100px; display: flex; justify-content: center; align-items: center; text-align: center; font-size: 16px; color: white;">Watch Complete</div>
+
+  <script>
+    // Embedding and tracking YouTube video player with YouTube IFrame API
+
+    // Load the IFrame Player API code asynchronously
+    const tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+    let player;
+    let watchTime = 0; // Tracks watch time in seconds
+    let interval;
+    let targetTime = 0; // Target watch time in seconds
+
+    // This function creates an <iframe> (and YouTube player)
+    // after the API code downloads
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player('player', {
+        height: '360',
+        width: '640',
+        videoId: '', // Default video ID, replaced dynamically
+        events: {
+          'onStateChange': onPlayerStateChange
+        }
+      });
+    }
+
+    // Function to handle player state changes
+    function onPlayerStateChange(event) {
+      if (event.data === YT.PlayerState.PLAYING) {
+        startTracking();
+      } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
+        stopTracking();
+      }
+    }
+
+    // Start tracking watch time
+    function startTracking() {
+      if (!interval) {
+        interval = setInterval(() => {
+          watchTime++;
+          console.log(`Watch Time: ${watchTime} seconds`);
+          if (watchTime >= targetTime) {
+            stopTracking();
+            document.getElementById('complete-btn').style.backgroundColor = 'green';
+          }
+        }, 1000);
+      }
+    }
+
+    // Stop tracking watch time
+    function stopTracking() {
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
+    }
+
+    // Extract YouTube Video ID from URL
+    function extractVideoId(url) {
+      const urlObj = new URL(url);
+      if (urlObj.hostname === 'www.youtube.com' || urlObj.hostname === 'youtube.com') {
+        return urlObj.searchParams.get('v');
+      } else if (urlObj.hostname === 'youtu.be') {
+        return urlObj.pathname.substring(1);
+      }
+      return null;
+    }
+
+    // Load a new video and reset the tracker
+    function loadVideo() {
+      const videoUrl = document.getElementById('video-url').value.trim();
+      const videoId = extractVideoId(videoUrl);
+      targetTime = parseInt(document.getElementById('target-time').value, 10);
+
+      if (!videoId) {
+        alert("Invalid YouTube URL. Please enter a valid URL.");
+        return;
+      }
+
+      if (isNaN(targetTime) || targetTime <= 0) {
+        alert("Please enter a valid target time in seconds.");
+        return;
+      }
+
+      watchTime = 0;
+      document.getElementById('complete-btn').style.backgroundColor = 'gray';
+
+      if (player) {
+        player.loadVideoById(videoId);
+        console.log(videoId);
+        
+      }
+    }
+  </script>
+</body>
+</html>
